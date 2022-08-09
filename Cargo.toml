@@ -18,7 +18,7 @@ dunce = "1.0"
 env_logger = "0.9"
 futures = "0.3.14"
 glob = "0.3.0"
-hippo-openapi = "0.9"
+hippo-openapi = "0.10.0"
 itertools = "0.10.0"
 log = "0.4"
 mime_guess = { version = "2.0" }
@@ -30,3 +30,4 @@ serde_json = "1.0"
 sha2 = "0.9"
 tokio = {version = "1.17", features = ["full"]}
 toml = "0.5"
+uuid = "1"

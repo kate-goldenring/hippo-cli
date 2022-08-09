@@ -2,17 +2,18 @@ use hippo_openapi::models::GetChannelLogsVm;
 use hippo_openapi::models::PatchChannelCommand;
 use std::collections::HashMap;
 
-use hippo_openapi::apis::account_api::{api_account_createtoken_post, api_account_post};
-use hippo_openapi::apis::app_api::{api_app_get, api_app_id_delete, api_app_post};
-use hippo_openapi::apis::certificate_api::{
-    api_certificate_get, api_certificate_id_delete, api_certificate_post,
+use hippo_openapi::apis::accounts_api::api_accounts_post;
+use hippo_openapi::apis::apps_api::{api_apps_get, api_apps_id_delete, api_apps_post};
+use hippo_openapi::apis::auth_tokens_api::api_auth_tokens_post;
+use hippo_openapi::apis::certificates_api::{
+    api_certificates_get, api_certificates_id_delete, api_certificates_post,
 };
-use hippo_openapi::apis::channel_api::{
-    api_channel_get, api_channel_id_delete, api_channel_id_get, api_channel_id_patch,
-    api_channel_post, api_channel_logs_id_get
+use hippo_openapi::apis::channels_api::{
+    api_channels_get, api_channels_id_delete, api_channels_id_get, api_channels_id_logs_get,
+    api_channels_id_patch, api_channels_post,
 };
 use hippo_openapi::apis::configuration::{ApiKey, Configuration};
-use hippo_openapi::apis::revision_api::{api_revision_get, api_revision_post};
+use hippo_openapi::apis::revisions_api::{api_revisions_get, api_revisions_post};
 use hippo_openapi::apis::Error;
 use hippo_openapi::models::{
     AppItemPage, CertificateItemPage, ChannelItem, ChannelItemPage,
@@ -21,6 +22,8 @@ use hippo_openapi::models::{
     RegisterRevisionCommand, RevisionItemPage, TokenInfo, UpdateEnvironmentVariableDto,
     UpdateEnvironmentVariableDtoListField,
 };
+
+use uuid::Uuid;
 
 use reqwest::header;
 use serde::Deserialize;
@@ -45,7 +48,7 @@ impl Client {
 
         let base_path = match conn_info.url.strip_suffix("/") {
             Some(s) => s.to_owned(),
-            None => conn_info.url
+            None => conn_info.url,
         };
         let configuration = Configuration {
             base_path: base_path,
@@ -74,7 +77,7 @@ impl Client {
     }
 
     pub async fn register(&self, username: String, password: String) -> anyhow::Result<String> {
-        api_account_post(
+        api_accounts_post(
             &self.configuration,
             Some(CreateAccountCommand {
                 user_name: username,
@@ -86,7 +89,7 @@ impl Client {
     }
 
     pub async fn login(&self, username: String, password: String) -> anyhow::Result<TokenInfo> {
-        api_account_createtoken_post(
+        api_auth_tokens_post(
             &self.configuration,
             Some(CreateTokenCommand {
                 user_name: username,
@@ -97,8 +100,8 @@ impl Client {
         .map_err(format_response_error)
     }
 
-    pub async fn add_app(&self, name: String, storage_id: String) -> anyhow::Result<String> {
-        api_app_post(
+    pub async fn add_app(&self, name: String, storage_id: String) -> anyhow::Result<Uuid> {
+        api_apps_post(
             &self.configuration,
             Some(CreateAppCommand {
                 name: name,
@@ -110,13 +113,13 @@ impl Client {
     }
 
     pub async fn remove_app(&self, id: String) -> anyhow::Result<()> {
-        api_app_id_delete(&self.configuration, &id)
+        api_apps_id_delete(&self.configuration, &id)
             .await
             .map_err(format_response_error)
     }
 
     pub async fn list_apps(&self) -> anyhow::Result<AppItemPage> {
-        api_app_get(&self.configuration, None, None, None, None, None)
+        api_apps_get(&self.configuration, None, None, None, None, None)
             .await
             .map_err(format_response_error)
     }
@@ -126,8 +129,8 @@ impl Client {
         name: String,
         public_key: String,
         private_key: String,
-    ) -> anyhow::Result<String> {
-        api_certificate_post(
+    ) -> anyhow::Result<Uuid> {
+        api_certificates_post(
             &self.configuration,
             Some(CreateCertificateCommand {
                 name: name,
@@ -140,27 +143,27 @@ impl Client {
     }
 
     pub async fn list_certificates(&self) -> anyhow::Result<CertificateItemPage> {
-        api_certificate_get(&self.configuration, None, None, None, None, None)
+        api_certificates_get(&self.configuration, None, None, None, None, None)
             .await
             .map_err(format_response_error)
     }
 
     pub async fn remove_certificate(&self, id: String) -> anyhow::Result<()> {
-        api_certificate_id_delete(&self.configuration, &id)
+        api_certificates_id_delete(&self.configuration, &id)
             .await
             .map_err(format_response_error)
     }
 
     pub async fn add_channel(
         &self,
-        app_id: String,
+        app_id: Uuid,
         name: String,
         domain: Option<String>,
         revision_selection_strategy: ChannelRevisionSelectionStrategy,
         range_rule: Option<String>,
-        active_revision_id: Option<String>,
-        certificate_id: Option<String>,
-    ) -> anyhow::Result<String> {
+        active_revision_id: Option<Uuid>,
+        certificate_id: Option<Uuid>,
+    ) -> anyhow::Result<Uuid> {
         let command = CreateChannelCommand {
             app_id: app_id,
             name: name,
@@ -170,31 +173,31 @@ impl Client {
             active_revision_id,
             certificate_id,
         };
-        api_channel_post(&self.configuration, Some(command))
+        api_channels_post(&self.configuration, Some(command))
             .await
             .map_err(format_response_error)
     }
 
     pub async fn get_channel_by_id(&self, id: &str) -> anyhow::Result<ChannelItem> {
-        api_channel_id_get(&self.configuration, id)
+        api_channels_id_get(&self.configuration, id)
             .await
             .map_err(format_response_error)
     }
 
     pub async fn list_channels(&self) -> anyhow::Result<ChannelItemPage> {
-        api_channel_get(&self.configuration, None, None, None, None, None)
+        api_channels_get(&self.configuration, Some(""), None, None, Some("Name"), None)
             .await
             .map_err(format_response_error)
     }
 
     pub async fn remove_channel(&self, id: String) -> anyhow::Result<()> {
-        api_channel_id_delete(&self.configuration, &id)
+        api_channels_id_delete(&self.configuration, &id)
             .await
             .map_err(format_response_error)
     }
 
     pub async fn channel_logs(&self, id: String) -> anyhow::Result<GetChannelLogsVm> {
-        api_channel_logs_id_get(&self.configuration, &id)
+        api_channels_id_logs_get(&self.configuration, &id)
             .await
             .map_err(format_response_error)
     }
@@ -203,7 +206,7 @@ impl Client {
         &self,
         key: String,
         value: String,
-        channel_id: String,
+        channel_id: Uuid,
     ) -> anyhow::Result<()> {
         let mut environment_variables = self.list_environment_variables(channel_id.clone()).await?;
         environment_variables.push(EnvironmentVariableItem {
@@ -212,9 +215,9 @@ impl Client {
             key: key,
             value: value,
         });
-        api_channel_id_patch(
+        api_channels_id_patch(
             &self.configuration,
-            &channel_id,
+            &channel_id.to_string(),
             Some(PatchChannelCommand {
                 // TODO: fix this in hippo 0.19 - this is a very ugly type cast that shouldn't exist
                 environment_variables: Some(Box::new(UpdateEnvironmentVariableDtoListField {
@@ -237,15 +240,15 @@ impl Client {
 
     pub async fn list_environment_variables(
         &self,
-        channel_id: String,
+        channel_id: Uuid,
     ) -> anyhow::Result<Vec<EnvironmentVariableItem>> {
-        let channel = self.get_channel_by_id(&channel_id).await?;
+        let channel = self.get_channel_by_id(&channel_id.to_string()).await?;
         Ok(channel.environment_variables)
     }
 
     pub async fn remove_environment_variable(
         &self,
-        channel_id: String,
+        channel_id: Uuid,
         key: String,
     ) -> anyhow::Result<()> {
         let mut environment_variables = self.list_environment_variables(channel_id.clone()).await?;
@@ -254,9 +257,9 @@ impl Client {
             .position(|e| e.key == key)
             .unwrap();
         environment_variables.remove(index);
-        api_channel_id_patch(
+        api_channels_id_patch(
             &self.configuration,
-            &channel_id,
+            &channel_id.to_string(),
             Some(PatchChannelCommand {
                 // TODO: fix this in hippo 0.19 - this is a very ugly type cast that shouldn't exist
                 environment_variables: Some(Box::new(UpdateEnvironmentVariableDtoListField {
@@ -282,7 +285,7 @@ impl Client {
         app_storage_id: String,
         revision_number: String,
     ) -> anyhow::Result<()> {
-        api_revision_post(
+        api_revisions_post(
             &self.configuration,
             Some(RegisterRevisionCommand {
                 app_storage_id: app_storage_id,
@@ -294,7 +297,7 @@ impl Client {
     }
 
     pub async fn list_revisions(&self) -> anyhow::Result<RevisionItemPage> {
-        api_revision_get(&self.configuration, None, None)
+        api_revisions_get(&self.configuration, None, None)
             .await
             .map_err(format_response_error)
     }
@@ -313,6 +316,9 @@ fn format_response_error<T>(e: Error<T>) -> anyhow::Error {
                 Ok(m) => anyhow::anyhow!("{} {:?}", m.title, m.errors),
                 _ => anyhow::anyhow!(r.content),
             }
+        }
+        Error::Serde(err ) => {
+            anyhow::anyhow!(format!("could not parse JSON object: {}", err))
         }
         _ => anyhow::anyhow!(e.to_string()),
     }

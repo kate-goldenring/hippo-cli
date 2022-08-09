@@ -45,5 +45,5 @@ pub(crate) enum Commands {
     Logs {
         /// The channel ID
         id: String,
-    }
+    },
 }

@@ -483,19 +483,21 @@ dependencies = [
  "sha2",
  "tokio",
  "toml",
+ "uuid",
 ]
 
 [[package]]
 name = "hippo-openapi"
-version = "0.9.1"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8213771040030bccc14e6f6013b6753fa5cf4c0f1b991c450d52d90189576a1"
+checksum = "2312754662f7213bf7c2d95f453b7afad2dc99ded7eedc205acf82cf6a14fb51"
 dependencies = [
  "reqwest",
  "serde",
  "serde_derive",
  "serde_json",
  "url",
+ "uuid",
 ]
 
 [[package]]
@@ -1376,6 +1378,15 @@ dependencies = [
  "idna",
  "matches",
  "percent-encoding",
+]
+
+[[package]]
+name = "uuid"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd6469f4314d5f1ffec476e05f17cc9a78bc7a27a6a857842170bdf8d6f98d2f"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
