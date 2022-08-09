@@ -19,6 +19,7 @@ use std::{
     io::BufReader,
     path::PathBuf,
 };
+use uuid::Uuid;
 
 const ABOUT_HIPPO: &str = r#"Create and manage Hippo applications.
 
@@ -167,13 +168,17 @@ impl Cli {
                 };
                 let id = hippo_client
                     .add_channel(
-                        app_id.to_owned(),
+                        Uuid::parse_str(app_id)?,
                         name.to_owned(),
                         domain.to_owned(),
                         revision_selection_strategy,
                         range_rule.to_owned(),
-                        revision_id.to_owned(),
-                        certificate_id.to_owned(),
+                        revision_id.as_ref().map_or(None, |r| {
+                            Some(Uuid::parse_str(&r).expect("could not parse active revision id"))
+                        }),
+                        certificate_id.as_ref().map_or(None, |c| {
+                            Some(Uuid::parse_str(&c).expect("could not parse certificate id"))
+                        }),
                     )
                     .await?;
                 println!("Added {} (ID = '{}')", name, id);
@@ -205,7 +210,7 @@ impl Cli {
                     .add_environment_variable(
                         key.to_owned(),
                         value.to_owned(),
-                        channel_id.to_owned(),
+                        Uuid::parse_str(channel_id)?,
                     )
                     .await?;
                 println!("Added {}={}", key, value);
@@ -213,14 +218,14 @@ impl Cli {
 
             Commands::Env(EnvCommands::List { channel_id }) => {
                 let envs = hippo_client
-                    .list_environment_variables(channel_id.to_owned())
+                    .list_environment_variables(Uuid::parse_str(channel_id)?)
                     .await?;
                 println!("{}", serde_json::to_string_pretty(&envs)?);
             }
 
             Commands::Env(EnvCommands::Remove { channel_id, id }) => {
                 hippo_client
-                    .remove_environment_variable(channel_id.to_owned(), id.to_owned())
+                    .remove_environment_variable(Uuid::parse_str(channel_id)?, id.to_owned())
                     .await?;
                 println!("Removed {}", id);
             }
