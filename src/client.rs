@@ -199,23 +199,23 @@ impl Client {
     pub async fn patch_channel(
         &self,
         id: Uuid,
-        name: Option<Box<StringField>>,
-        domain: Option<Box<StringField>>,
-        revision_selection_strategy: Option<Box<ChannelRevisionSelectionStrategyField>>,
-        range_rule: Option<Box<StringField>>,
-        active_revision_id: Option<Box<GuidNullableField>>,
-        certificate_id: Option<Box<GuidNullableField>>,
-        environment_variables: Option<Box<UpdateEnvironmentVariableDtoListField>>,
+        name: Option<String>,
+        domain: Option<String>,
+        revision_selection_strategy: Option<ChannelRevisionSelectionStrategy>,
+        range_rule: Option<String>,
+        active_revision_id: Option<Uuid>,
+        certificate_id: Option<Uuid>,
+        environment_variables: Option<Vec<UpdateEnvironmentVariableDto>>,
     ) -> anyhow::Result<()> {
         let command = PatchChannelCommand {
             channel_id: Some(id),
-            name: name,
-            domain,
-            revision_selection_strategy,
-            range_rule,
-            active_revision_id,
-            certificate_id,
-            environment_variables,
+            name: name.map(|s| Box::new(StringField { value: Some(s) })),
+            domain: domain.map(|s| Box::new(StringField { value: Some(s) })),
+            revision_selection_strategy: revision_selection_strategy.map(|r| Box::new(ChannelRevisionSelectionStrategyField { value: Some(r) })),
+            range_rule: range_rule.map(|s| Box::new(StringField { value: Some(s) })),
+            active_revision_id: active_revision_id.map(|a| Box::new(GuidNullableField { value: Some(a) })),
+            certificate_id: certificate_id.map(|c| Box::new(GuidNullableField { value: Some(c) })),
+            environment_variables: environment_variables.map(|evs| Box::new(UpdateEnvironmentVariableDtoListField { value: Some(evs) })),
         };
 
         api_channels_id_patch(&self.configuration, &id.to_string(), Some(command))
