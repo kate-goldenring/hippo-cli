@@ -202,12 +202,18 @@ impl Client {
         revision_selection_strategy: Option<ChannelRevisionSelectionStrategy>,
         range_rule: Option<String>,
         active_revision_id: Option<Uuid>,
+        certificate_id: Option<Uuid>,
+        environment_variables: Option<Vec<UpdateEnvironmentVariableDto>>,
     ) -> anyhow::Result<()> {
         let command = PatchChannelCommand {
             channel_id: Some(id),
+            name: name.map(|s| Box::new(StringField { value: Some(s) })),
+            domain: domain.map(|s| Box::new(StringField { value: Some(s) })),
             revision_selection_strategy: revision_selection_strategy.map(|r| Box::new(Some(r))),
+            range_rule: range_rule.map(|s| Box::new(StringField { value: Some(s) })),
             active_revision_id: active_revision_id.map(|a| Box::new(Some(a))),
-            ..Default::default()
+            certificate_id: certificate_id.map(|c| Box::new(Some(c))),
+            environment_variables: environment_variables.map(|evs| Box::new(UpdateEnvironmentVariableDtoListField { value: Some(evs) })),
         };
 
         api_channels_id_patch(&self.configuration, &id.to_string(), Some(command))
