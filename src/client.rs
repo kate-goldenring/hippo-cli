@@ -1,9 +1,6 @@
 use hippo_openapi::apis::channels_api::api_channels_id_put;
-use hippo_openapi::models::ChannelRevisionSelectionStrategyField;
 use hippo_openapi::models::GetChannelLogsVm;
-use hippo_openapi::models::GuidNullableField;
 use hippo_openapi::models::PatchChannelCommand;
-use hippo_openapi::models::StringField;
 use hippo_openapi::models::UpdateChannelCommand;
 use std::collections::HashMap;
 
@@ -25,7 +22,6 @@ use hippo_openapi::models::{
     ChannelRevisionSelectionStrategy, CreateAccountCommand, CreateAppCommand,
     CreateCertificateCommand, CreateChannelCommand, CreateTokenCommand, EnvironmentVariableItem,
     RegisterRevisionCommand, RevisionItemPage, TokenInfo, UpdateEnvironmentVariableDto,
-    UpdateEnvironmentVariableDtoListField,
 };
 
 use uuid::Uuid;
@@ -209,13 +205,13 @@ impl Client {
     ) -> anyhow::Result<()> {
         let command = PatchChannelCommand {
             channel_id: Some(id),
-            name: name.map(|s| Box::new(StringField { value: Some(s) })),
-            domain: domain.map(|s| Box::new(StringField { value: Some(s) })),
-            revision_selection_strategy: revision_selection_strategy.map(|r| Box::new(ChannelRevisionSelectionStrategyField { value: Some(r) })),
-            range_rule: range_rule.map(|s| Box::new(StringField { value: Some(s) })),
-            active_revision_id: active_revision_id.map(|a| Box::new(GuidNullableField { value: Some(a) })),
-            certificate_id: certificate_id.map(|c| Box::new(GuidNullableField { value: Some(c) })),
-            environment_variables: environment_variables.map(|evs| Box::new(UpdateEnvironmentVariableDtoListField { value: Some(evs) })),
+            name: name.map(Box::new),
+            domain: domain.map(Box::new),
+            revision_selection_strategy: revision_selection_strategy.map(Box::new),
+            range_rule: range_rule.map(Box::new),
+            active_revision_id: active_revision_id.map(Box::new),
+            certificate_id: certificate_id.map(Box::new),
+            environment_variables: environment_variables.map(Box::new),
         };
 
         api_channels_id_patch(&self.configuration, &id.to_string(), Some(command))
@@ -280,17 +276,15 @@ impl Client {
             &channel_id.to_string(),
             Some(PatchChannelCommand {
                 // TODO: fix this in hippo 0.19 - this is a very ugly type cast that shouldn't exist
-                environment_variables: Some(Box::new(UpdateEnvironmentVariableDtoListField {
-                    value: Some(
-                        environment_variables
-                            .iter()
-                            .map(|e| UpdateEnvironmentVariableDto {
-                                key: e.key.clone(),
-                                value: e.value.clone(),
-                            })
-                            .collect(),
-                    ),
-                })),
+                environment_variables: Some(Box::new(
+                    environment_variables
+                        .iter()
+                        .map(|e| UpdateEnvironmentVariableDto {
+                            key: e.key.clone(),
+                            value: e.value.clone(),
+                        })
+                        .collect(),
+                )),
                 ..Default::default()
             }),
         )
@@ -322,17 +316,15 @@ impl Client {
             &channel_id.to_string(),
             Some(PatchChannelCommand {
                 // TODO: fix this in hippo 0.19 - this is a very ugly type cast that shouldn't exist
-                environment_variables: Some(Box::new(UpdateEnvironmentVariableDtoListField {
-                    value: Some(
-                        environment_variables
-                            .iter()
-                            .map(|e| UpdateEnvironmentVariableDto {
-                                key: e.key.clone(),
-                                value: e.value.clone(),
-                            })
-                            .collect(),
-                    ),
-                })),
+                environment_variables: Some(Box::new(
+                    environment_variables
+                        .iter()
+                        .map(|e| UpdateEnvironmentVariableDto {
+                            key: e.key.clone(),
+                            value: e.value.clone(),
+                        })
+                        .collect(),
+                )),
                 ..Default::default()
             }),
         )
